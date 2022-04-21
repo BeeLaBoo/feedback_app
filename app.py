@@ -5,6 +5,9 @@ from enum import unique
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from send_mail import send_mail
+import requests
+import configparser
+
 
 
 app=Flask(__name__,template_folder='template')
@@ -30,11 +33,11 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer)
     comments = db.Column(db.Text())
 
-def  __init__ (self, customer,  pattern,  rating , comments): 
-     self.customer = customer
-     self.pattern = pattern
-     self.rating = rating
-     self.comments = comments
+    def  __init__ (self, customer,  pattern,  rating , comments): 
+        self.customer = customer
+        self.pattern = pattern
+        self.rating = rating
+        self.comments = comments
 
 
 
@@ -51,26 +54,26 @@ def submit():
         pattern = request.form['pattern']
         rating = request.form['rating']
         comments = request.form['comments']
+        # print(customer, pattern, rating, comments)
+        if customer == '' or pattern == '':
+            return render_template('index.html', message='Please enter required fields')
+        if db.session.query(Feedback).filter(Feedback.customer == customer).count() == 0:
+            data = Feedback(customer, pattern, rating, comments)
+            db.session.add(data)
+            db.session.commit()
+            send_mail(customer, dealer, rating, comments)
+            return render_template('success.html')
+        return render_template('index.html', message='You have already submitted feedback')
+
 
         #print(customer,pattern_name,rating,comments) 
         # #print in console and then render in success page
 
-       
-        if customer =='' :
-            return render_template('index.html', message='Please fill required fields')
 
          #I do not want to get feedback from same customer in the same order
 
-        if db.session.query(Feedback).filter(Feedback.customer == customer).count() == 0:
-            data = Feedback(customer,pattern,rating,comments)
-            db.session.add(Feedback.data)
-            db.session.commit()
-            return render_template('success.html')
-
-        return render_template('index.html', message='You have already submitted feedback')
-
-        send_mail(customer,pattern,rating,comments)
+       
 
 if __name__ == '__main__':
     
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
